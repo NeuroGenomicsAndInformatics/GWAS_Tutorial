@@ -1,0 +1,31 @@
+##### Merge and PCA #####
+
+# This tutorial demonstrates how to merge imputed and QCed datasets from prior tutorials and how to generate PCs for the data.
+# The outcome of the tutorial is a merged dataset from which to pull data for analysis and a set of PCs.
+
+##############################
+##### Step 1: Merge Data #####
+##############################
+
+# Put bfile names in a file called merge_list.txt. This will constitute the datasets to be merged.
+# Merge datasets with plink1.9
+plink1.9 --merge-list merge_list.txt --keep-allele-order --allow-no-sex --make-bed --out merged_data
+
+# There will be same position warnings within the log file. These can indicate a problem, or they may just be multi-allelics.
+# Use the following script to get just the non-multi-allelic warnings.
+# If all data was imputed using these tutorials, it's unlikely that there will be any problems.
+bash MAcheck.bash merged_data.log
+
+# An empty .log.MAcheck file indicates that all same position warnings are multi-allelics.
+
+################################
+##### Step 2: Generate PCs #####
+################################
+
+# Principle Components are used to understand underlying relationships between data.
+# This step demonstrates filtering for high quality variants to use while generating PCs.
+# You are looking for around 50,000-100,000 variants. Adjust the --geno and --maf filters to get that number.
+plink1.9 --allow-no-sex --bfile merge_data --geno 0.0001 --hwe 0.05 --keep-allele-order --ld-window-r2 0.2 --maf 0.01 --out merge_data_pc --pca 10
+
+# The outcome is an .eigenvec file that contains the sample names and first 10 PCs for the data.
+# These data will be used for association analyses in the next tutorial.

@@ -1,0 +1,35 @@
+###### GWAS Array Association Study ############
+
+# This tutorial demonstrates conducting a GWAS association study.
+# This tutorial utilizes data generated from prior tutorials in this series.
+# Specifically, it utilizes the set of plink files merged after imputation and calculated PCs.
+
+#####################################
+##### Step 1: Data Preparation #####
+#####################################
+
+# Start by selecting the individuals that you want to study from your dataset.
+# This group might satisfy specific age restrictions, have certain diagnoses, or be from specific ancestry.
+# Add these samples with FID and IID to a "keep" file.
+# A relatedness filter will also be done.
+
+# Reduce dataset with "keep" file.
+plink2 --bfile $PriorDataset --keep $KeepFile --make-bed --out $PriorDataset_keep
+
+# Apply relatedness filter for third degree relatives
+plink2 --bfile $PriorDataset_keep --king-cutoff 0.0625 --make-bed --out $PriorDataset_keep_relat
+
+# Perform basic QC on the dataset. These filters include genotyping rate of 98%, minor allele frequency above 0.5%, and Hardy-Weinberg Equilibrium of 1e-30
+plink2 --bfile $PriorDataset_keep_relat --geno 0.02 --maf 0.005 --hwe 1e-30 
+
+# Create a phenotype file
+#	Phenotype files hold the data that you'll use for analysis and covariates that you'll use.
+#	Common used covariates include sex, age, PCs, and sometimes batch or sequencing center.
+#	Use columns for STATUS, SEX, AGE, and PC1-PC10
+#	STATUS is the phenotype for analysis. In this case/control example, set controls to 1 and cases to 2.
+plink2 --bfile $PriorDataset_keep_relat --glm hide-covar --adjust --ci 0.95 --pheno $PhenoFile --pheno-name STATUS --covar $PhenoFile --covar-name SEX,AGE,PC1-PC10 --covar-variance-standardize --out $PriorDataset_keep_relat_gwas1
+
+# Create manhattan and QQ plots of the analysis.
+Rscript make_manhattan_update.R $PriorDataset_keep_relat_gwas1.STATUS.glm.logistic.hybrid.adjusted
+
+# The outcome of these steps is a set of summary statistics from the association study, a manhattan plot, and a QQ plot.
