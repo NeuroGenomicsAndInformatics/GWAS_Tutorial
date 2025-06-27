@@ -12,7 +12,11 @@ awk '$5 == "0" && $6 == "0" {print $2}' ${IN_BFILE}.bim > ${OUTDIR}/double0s.txt
 awk '$5 == "-" && $6 == "-" {print $2}' ${IN_BFILE}.bim >> ${OUTDIR}/double0s.txt
 awk '$5 == "." && $6 == "." {print $2}' ${IN_BFILE}.bim >> ${OUTDIR}/double0s.txt
 
-plink1.9 --bfile ${IN_BFILE} --keep-allele-order --exclude ${OUTDIR}/double0s.txt --make-bed --out ${OUTDIR}/00-${NAMEBASE}
+plink1.9 --bfile ${IN_BFILE} \
+	--keep-allele-order \
+	--exclude ${OUTDIR}/double0s.txt \
+	--make-bed \
+	--out ${OUTDIR}/00-${NAMEBASE}
 
 # Get SNPs with missing alleles in 5th column
 awk '$5 == "0" && $6 != "0" {print $1,$2,$3,$4,$5,$6}' ${OUTDIR}/00-${NAMEBASE}.bim > ${OUTDIR}/SNPs_tofix.txt
@@ -23,10 +27,12 @@ awk '$5 == "." && $6 != "." {print $1,$2,$3,$4,$5,$6}' ${OUTDIR}/00-${NAMEBASE}.
 awk 'FNR==NR{a[$2]=$0; next}{if(b=a[$1]){print b, $0;}}' ${OUTDIR}/SNPs_tofix.txt ${REFALT_FILE}  >  ${OUTDIR}/SNPs_info.txt
 
 # Get alleles in case of flip
-awk '{print $8,$9}' ${OUTDIR}/SNPs_info.txt | sed  -e 's/A/Y/g; s/T/A/g; s/Y/T/g; s/G/W/g; s/C/G/g; s/W/C/g' > ${OUTDIR}/SNP_flip.txt
+awk '{print $8,$9}' ${OUTDIR}/SNPs_info.txt \
+	| sed  -e 's/A/Y/g; s/T/A/g; s/Y/T/g; s/G/W/g; s/C/G/g; s/W/C/g' > ${OUTDIR}/SNP_flip.txt
 
 # Add flips to end of file
-paste ${OUTDIR}/SNPs_info.txt ${OUTDIR}/SNP_flip.txt | awk '{print $0}' > ${OUTDIR}/SNPs_infoflip.txt
+paste ${OUTDIR}/SNPs_info.txt ${OUTDIR}/SNP_flip.txt \
+	| awk '{print $0}' > ${OUTDIR}/SNPs_infoflip.txt
 
 # Make list for each case (correct orientation, flip, swap, flip+swap)
 awk '$5 == "0" && $6 == $8 {print $2,$5,$6,$9,$8}' ${OUTDIR}/SNPs_infoflip.txt > ${OUTDIR}/SNPs_0allelesfix.txt
@@ -52,7 +58,11 @@ cat ${OUTDIR}/SNPs_0allelesfix.txt ${OUTDIR}/SNPs_0allelesfix2.txt ${OUTDIR}/SNP
 awk '!seen[$1]++' ${OUTDIR}/SNPs_0allelesfix_all.txt > ${OUTDIR}/allele_change.txt
 
 # update alleles
-plink1.9 --bfile ${OUTDIR}/00-${NAMEBASE} --update-alleles ${OUTDIR}/allele_change.txt --keep-allele-order --make-bed --out ${OUTDIR}/00-${NAMEBASE}.alleles
+plink1.9 --bfile ${OUTDIR}/00-${NAMEBASE} \
+	--update-alleles ${OUTDIR}/allele_change.txt \
+	--keep-allele-order \
+	--make-bed \
+	--out ${OUTDIR}/00-${NAMEBASE}.alleles
 
 # Find variants with at least one zero allele missing or . missing allele
 awk '{if($5 == "0" || $6 == "0" || $5 == "." || $6 == "." || $5 == "-" || $6 == "-") print $0}' ${OUTDIR}/00-${NAMEBASE}.alleles.bim > ${OUTDIR}/vars_allele_missing.txt
@@ -100,5 +110,3 @@ rm ${OUTDIR}/00-${NAMEBASE}.alleles.{bed,bim,fam}
 rm ${OUTDIR}/00-${NAMEBASE}.rmdups.{bed,bim,fam}
 rm ${OUTDIR}/00-${NAMEBASE}.preQC.{bed,bim,fam}
 rm ${OUTDIR}/00-${NAMEBASE}.preQC.0inds.{bed,bim,fam}
-
-

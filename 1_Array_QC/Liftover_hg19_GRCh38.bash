@@ -27,13 +27,17 @@ ${SCRIPT_DIR}/liftOver \
 	${TEMP}.chrs.tolift.bed-hg38 ${TEMP}.chrs.tolift.bed-unmapped
 
 # Remove variants on weird chromosomes
-grep -v  '#Deleted' ${TEMP}.chrs.tolift.bed-unmapped | awk '{print $4}' > ${OUTDIR}/to_remove.txt
+grep -v  '#Deleted' ${TEMP}.chrs.tolift.bed-unmapped \
+	| awk '{print $4}' > ${OUTDIR}/to_remove.txt
 
-grep '_alt'  ${TEMP}.chrs.tolift.bed-hg38 | awk '{print $2}'  >> ${OUTDIR}/to_remove.txt
+grep '_alt'  ${TEMP}.chrs.tolift.bed-hg38 \
+	| awk '{print $2}'  >> ${OUTDIR}/to_remove.txt
 
-grep '_random'  ${TEMP}.chrs.tolift.bed-hg38 | awk '{print $2}' >> ${OUTDIR}/to_remove.txt
+grep '_random'  ${TEMP}.chrs.tolift.bed-hg38 \
+	| awk '{print $2}' >> ${OUTDIR}/to_remove.txt
 
-grep 'chrUn_'  ${TEMP}.chrs.tolift.bed-hg38 | awk '{print $2}' >> ${OUTDIR}/to_remove.txt
+grep 'chrUn_'  ${TEMP}.chrs.tolift.bed-hg38 \
+	| awk '{print $2}' >> ${OUTDIR}/to_remove.txt
 
 #Creating files to update plink file to hg38
 grep -Ev '_alt|_random|chrUn_' ${TEMP}.chrs.tolift.bed-hg38 > ${TEMP}.chrs.tolift.bed-hg38-clean
