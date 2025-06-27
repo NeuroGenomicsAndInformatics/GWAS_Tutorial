@@ -1,0 +1,90 @@
+##### GWAS Array QC #####
+# This tutorial is designed to demonstrate how to perform imputation on QCed SNP array data.
+# This tutorial utilizes several bash scripts to perform multiple tasks at once.
+
+# In order to use this tutorial, you will need to determine an output directory (OUTDIR) and name for your project (ProjectName).
+
+# The inputs and outputs for each step are listed.
+
+##########################
+##### Start Analysis #####
+##########################
+
+
+#################################
+##### Step 1: Prepare Data ######
+#################################
+
+# Several tasks must be completed before submitting data to the imputation server.
+# Data must be separated by chromosome and must be in vcf format.
+
+# The Pre-imputation_MJ.bash script does the following:
+#	remove exclude list variants from dataset
+#	perform several filters from gnomAD
+#	split dataset into chromosomes
+#	convert plink files to vcfs
+#	name variants with chr:pos:ref:alt format
+#	set heterozygous haplotypes to missing on the X chromosome
+
+# Inputs:
+# 	The output plink files from the previous QC step.
+#	Output directory
+#	Project Name
+#	A combined SNP exclusion list - collect all SNPs from exclude lists into a single file. This file is one column with variant IDs.
+# Outputs:
+#	vcf files for each chromosome
+
+bash Pre-imputation.bash $PreviousData $OUTDIR $ProjectName $ExclusionList
+
+# The outcome is a set of inputation server-ready vcf files.
+
+
+##############################
+##### Step 2: Imputation #####
+##############################
+
+# Use an imputation server to impute data from our QCed files
+# TOPMed's Imputation Server is free to use at https://imputation.biodatacatalyst.nhlbi.nih.gov/
+# Instructions refer to build 2.0.0-beta3
+
+# Go to the imputation server site and log in or create an account.
+# Once logged in, navigate to Run -> Genotype Imputation (Minimac4)
+
+# Select "TOPMed r3" for "Reference Panel"
+# Click select files and use CTRL to select all of the vcf files we created, including chrX
+# Select "GRCh38/hg38" for "Array Build"
+# Select "0.3" for "rsq Filter"
+# Select "Eagle v2.4 (phased output)" for "Phasing"
+# Select "vs. TOPMed Panel" for "Population"
+# Select "Quality Control & Imputation" for "Mode"
+# Check the two boxes that start with "I will"
+# Click "Submit Job"
+
+# Your data will be QCed and imputed by the server. Once done, you will receive an email with a password and a link to your data.
+
+
+######################################
+##### Step 3: Post-Imputation QC #####
+######################################
+
+# Data from the imputation server requires download and processing.
+# Follow the link in the imputation completion email.
+# Download the available files.
+
+# The Post-imputation_MJ.bash script does the following:
+#	unzip output files
+#	filter for Rsq > 0.7
+#	set variant IDs to chr:pos:ref:alt format
+#	gathers output vcfs into a single vcf
+#	convert to plink files
+
+# Inputs:
+#	Output directory
+#	Project Name
+#	Password provided in email. This should be in single quotes and any special characters need to be escaped with a \
+# Outputs:
+#	A set of imputed plink files
+
+bash Post-imputation.bash $OUTDIR $ProjectName '\$Password'
+
+# The outcome is a set of imputed plink files.

@@ -1,0 +1,102 @@
+##### GWAS Array QC #####
+# This tutorial is designed to demonstrate how to perform QC on SNP array data.
+# This tutorial utilizes several bash scripts to perform multiple tasks at once.
+
+# In order to use this tutorial, you will need to determine an output directory (OUTDIR) and name for your project (ProjectName).
+
+# The inputs and outputs for each step are listed.
+
+############################
+##### Step 1: Input QC #####
+############################
+
+# Before starting the QC in earnest, obtain your data and correct missing data.
+
+# The preQC_MJ.bash script will:
+#	remove variants with missing ref and alt alleles
+#	update alleles in the case of missing one allele
+#	remove variants with missing alleles after the update
+#	remove variants with no chromosome information
+#	remove variants with D or I as an allele
+#	remove duplicate variants
+#	remove variants with less than 90% individual missingness
+
+# Inputs: A raw set of plink files (bed,bim,fam)
+# 	A text file with SNPname, REF, and ALT columns made with an array-specific allele mapping file (https://www.chg.ox.ac.uk/~wrayner/strand/ABtoTOPstrand.html) 
+#	Output directory
+#	Project Name
+# Outputs: An initial QCed set of plink files
+
+bash preQC.bash /path/to/input_data $OUTDIR $ProjectName missing_alleles.txt
+
+# The outcome is a set of plink files with corrected alleles and removed unusable variants
+
+############################
+##### Step 2: Liftover #####
+############################
+
+# This bash script will liftover data from GRCh37/hg19 to GRCh38.
+# There is also a Liftover_hg18_GRCh38_MJ.bash that will lift from hg18 to GRCh38
+# It is important to verify that your data is in GRCh37/hg19 by checking a few variants to see if they match the positions in the data
+# You can check what build your data is here: https://www.ncbi.nlm.nih.gov/snp/
+
+# Liftover data to GRCh38 data. This step may be unnecessary.
+
+# Inputs: The plink files from the previous step
+#	Output directory
+#	Project Name
+# Outputs: A set of plink files in GRCh38 format
+
+bash Liftover_hg19_GRCh38.bash $PreviousData $OUTDIR $ProjectName
+
+# The outcome is a set of plink files in GRCh38 build.
+
+###############################
+##### Step 3: Missingness #####
+###############################
+
+# Perform variant and individual level QC.
+
+# The QC_P1_MJ.bash script does several QC steps:
+#	fix flips and swaps when compared to the reference genome
+#	perform variant and sample missingness filters of 95% and 98%
+#	remove palindromic SNPs
+#	apply minor allele frequency filter of 1%
+#	set variant ID format to chr:pos:ref:alt
+
+# Inputs: The plink files from the previous step
+#	Output directory
+#	Project Name
+#	A reference fasta file in build hg38. This can be obtained with guidance from here: https://gatk.broadinstitute.org/hc/en-us/articles/360035890811-Resource-bundle
+# Outputs: A set of plink files with the above QC completed
+
+bash QC_P1.bash $PreviousData $OUTDIR $ProjectName /path/to/reference.fasta
+
+# The outcome is a set of plink files that have been filtered for missingness and maf and have flips and swaps corrected
+
+#########################################
+##### Step 4: Sex and Population QC #####
+#########################################
+
+# Perform further QC.
+
+# The QC_P2_MJ.bash script carries out several QC steps:
+#	Updates sex
+#	Performs a sex check
+#	Finds heterozygosity outliers
+#	Filters variants by differential missingness from diagnosis and ancestry and filters based on hardy weinberg equilibrium
+
+# Inputs: The plink files from the previous step
+#	Output directory
+#	Project Name
+#	A sex update file. This file contains columns 1) FID and 2) IID for your samples and 3) 1/2 for sex (Females are 2)
+#	A European ancestry file. This file contains columns for FID and IID with no header for samples that are European.
+#	An optional phenotype file. This file contains columns for 1) FID and 2) IID for your samples and 3) STATUS (name is important and data should be binary)
+# Outputs: A QCed set of plink files
+#	A text file with all of the samples with non-matching reported and calculated sex
+#	A list of samples that fall outside 3SD of the mean for heterozygosity
+#	A histogram of the distribution of heterozygosity rates
+
+bash QC_P2.bash $$PreviousData $OUTDIR $ProjectName $SEX_UPDATE_FILE $EUROPEAN_FILE $PHENOTYPE_FILE
+
+# The outcome is a set of QCed plink files.
