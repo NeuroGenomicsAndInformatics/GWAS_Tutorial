@@ -1,4 +1,10 @@
 ##### GWAS Array QC #####
+# This tutorial utilizes freely available HapMap data. The data is available here: https://github.com/MareesAT/GWA_tutorial.git.
+# The following tutorials represent an update on that set of tutorials.
+# The HapMap data originated from hapmap3_r3_b36_fwd.consensus.qc and had a simulated outcome added, as well as subsetting to only European individuals.
+# In order to follow the tutorial, the HapMap data must be in the working directory.
+# Each step includes a generalized command and the specific commands for the HapMap example.
+
 # This tutorial is designed to demonstrate how to perform QC on SNP array data.
 # This tutorial utilizes several bash scripts to perform multiple tasks at once.
 
@@ -28,6 +34,7 @@
 # Outputs: An initial QCed set of plink files
 
 bash preQC.bash /path/to/input_data $OUTDIR $ProjectName missing_alleles.txt
+bash preQC.bash HapMap_3_r3_1 . HapMap_3_r3_1 missing_alleles.txt
 
 # The outcome is a set of plink files with corrected alleles and removed unusable variants
 
@@ -48,6 +55,7 @@ bash preQC.bash /path/to/input_data $OUTDIR $ProjectName missing_alleles.txt
 # Outputs: A set of plink files in GRCh38 format
 
 bash Liftover_hg19_GRCh38.bash $PreviousData $OUTDIR $ProjectName
+bash Liftover_hg19_GRCh38.bash 01-HapMap_3_r3_1 . HapMap_3_r3_1
 
 # The outcome is a set of plink files in GRCh38 build.
 
@@ -71,6 +79,7 @@ bash Liftover_hg19_GRCh38.bash $PreviousData $OUTDIR $ProjectName
 # Outputs: A set of plink files with the above QC completed
 
 bash QC_P1.bash $PreviousData $OUTDIR $ProjectName /path/to/reference.fasta
+bash QC_P1.bash 03-HapMap_3_r3_1 . HapMap_3_r3_1 /path/to/reference.fasta
 
 # The outcome is a set of plink files that have been filtered for missingness and maf and have flips and swaps corrected
 
@@ -97,6 +106,7 @@ bash QC_P1.bash $PreviousData $OUTDIR $ProjectName /path/to/reference.fasta
 #	A list of samples that fall outside 3SD of the mean for heterozygosity
 #	A histogram of the distribution of heterozygosity rates
 
-bash QC_P2.bash $$PreviousData $OUTDIR $ProjectName $SEX_UPDATE_FILE $EUROPEAN_FILE $PHENOTYPE_FILE
+bash QC_P2.bash $PreviousData $OUTDIR $ProjectName $SEX_UPDATE_FILE $EUROPEAN_FILE $PHENOTYPE_FILE
+bash QC_P2.bash 06-HapMap_3_r3_1 . HapMap_3_r3_1 HapMap_sex.txt $EUROPEAN_FILE $PHENOTYPE_FILE
 
 # The outcome is a set of QCed plink files.
