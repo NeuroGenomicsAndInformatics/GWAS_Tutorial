@@ -1,0 +1,191 @@
+##### GWAS Array PseudoGWAS #####
+# This tutorial is designed to demonstrate how to perform pseudoGWASes on SNP array data.
+# A "pseudoGWAS" is an association analysis between sets of controls to find spurious associations between datasets.
+# This tutorial utilizes several bash scripts to perform multiple tasks at once.
+# There are 3 sets of bash scripts to perform the pseudoGWAS based on which data is being compared. They are explained as Step 1a/b/c and Step 2a/b/c.
+# It is likely that these 3 versions will be run at different times based on stage of processing.
+# We recommend running a pseudoGWAS against 1000 Genomes data for each project, then between projects genotyped with the same array, then between each set of merged arrays before imputation.
+
+# In order to use this tutorial, you will need to determine an output directory (OUTDIR) and name for your project (ProjectName).
+
+# The inputs and outputs for each step are listed.
+
+#############################################
+##### Step 0: Prepare 1000 Genomes Data #####
+#############################################
+# This step uses bcftools ver. 1.15.1, but versions past 1.10 should work fine.
+
+# It's recommended to run a pseudoGWAS with each batch and 1000 Genomes.
+# The 1000 Genomes data is obtainable from: https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000_genomes_project/release/20190312_biallelic_SNV_and_INDEL/
+# The data is in VCF format and split by chromosomes.
+# Download all of the chromosome vcfs and their accompanying .tbi index.
+
+# Concat vcf files of all the chr's
+#	Prepare a list of all the vcf file names to combine and put it in file_list.txt 
+bcftools concat -f file_list.txt -Oz > 1KG_GRCh38.20190312_all_chr_merged.vcf.gz
+
+#Convert vcf to Plink format.
+plink1.9 --vcf 1KG_GRCh38.20190312_all_chr_merged.vcf.gz --keep-allele-order --allow-no-sex --make-bed --out 1KG_GRCh38.20190312_all_chr_merged
+
+# Set variant IDs
+plink2 --bfile 1KG_GRCh38.20190312_all_chr_merged --set-all-var-ids @:#:\$r:\$a --keep-allele-order --allow-no-sex --make-bed --out 1KG_GRCh38.20190312_all_chr_merged_updated_IDs
+
+# QC 1000 Genomes dataset. Apply genotyping rate filter of 98%, individual missingness of 98%, and minor allele frequency cutoff of 5%.
+plink2 --bfile 1KG_GRCh38.20190312_all_chr_merged_updated_IDs --geno 0.02 --mind 0.02 --maf 0.05 --make-bed --out 1KG_GRCh38.20190312_all_chr_merged_updated_IDs_qc
+
+# Subset to EUR individuals.
+plink2 --bfile 1KG_GRCh38.20190312_all_chr_merged_updated_IDs_qc --keep 1KG_EUR_to_extract.txt --make-bed --out 1KG_GRCh38.20190312_all_chr_merged_updated_IDs_qc_EUR
+
+# This dataset will be used in Step 1a.
+
+#################################################################
+##### Step 1a: Preparation for PseudoGWAS with 1000 Genomes #####
+#################################################################
+
+# Prepare the data for performing a pseudoGWAS.
+
+# These bash scripts:
+#	subset data to European controls
+#	merge the 2 datasets
+#	generate first 10 PCs for merged data
+
+# Inputs: 1 QCed set of plink files from the previous tutorial
+#	1000 Genomes data prepared as above
+#	Output directory
+#	Project name
+#	A file for each project with lists of European controls in each project
+# Outputs: A merged set of data from each project
+#	calculated PCs for use in a phenotype file
+
+bash pseudoGWAS_1KG_P1.bash $OUTDIR $DataFromProject1 $ProjectName1 $EuropeanControls1 $1KG_EUR_BFILE
+
+# The outcome is a merged set of plink files and PCs
+
+#################################################
+##### Step 2a: PseudoGWAS with 1000 Genomes #####
+#################################################
+
+# Perform pseudoGWAS.
+
+# These bash scripts:
+#	perform a pseudoGWAS with data prepared in previous step
+#	create a list of variants with pvalues < 1e-4
+#	create a manhattan plot of the data
+#	create a qq plot of the data
+
+# Inputs: 
+#	Output directory
+#	Project name for each project
+#	The merged set of plink files from Step 1a
+#	A phenotype file with FID, IID, STATUS, SEX, and PC1-10
+#		The STATUS in the phenotype file should be 1 for one set of data and 2 for the other set, as all are controls.
+# Outputs:
+#	Summary statistics from the pseudoGWAS
+#	A list of variants the are statistically significantly different between the datasets
+#	A manhattan plot .tiff
+#	A QQ plot .jpeg
+
+bash pseudoGWAS_1KG_P2.bash $OUTDIR $DataFromMergedProjects $ProjectName $PhenotypeFile
+
+# The outcome is a list of variants to exclude
+
+#############################################################
+##### Step 1b: Preparation for PseudoGWAS within Arrays #####
+#############################################################
+
+# Prepare the data for performing a pseudoGWAS.
+# The example is a pseudoGWAS between 2 array batches (but genotyped with the same chip).
+
+# These bash scripts:
+#	subset data to European controls
+#	merge the 2 datasets
+#	generate first 10 PCs for merged data
+
+# Inputs: 2 QCed sets of plink files from 2 separate batches that were genotyped with the same chip
+#	Output directory
+#	Project names for each project
+#	A file for each project with lists of European controls in each project
+# Outputs: A merged set of data from each project
+#	calculated PCs for use in a phenotype file
+
+bash pseudoGWAS_array_P1.bash $OUTDIR $DataFromProject1 $ProjectName1 $EuropeanControls1 $DataFromProject2 $ProjectName2 $EuropeanControls2
+
+# The outcome is a merged set of plink files and PCs
+
+#############################################
+##### Step 2b: PseudoGWAS within Arrays #####
+#############################################
+
+# Perform pseudoGWAS.
+
+# These bash scripts:
+#	perform a pseudoGWAS with data prepared in previous step
+#	create a list of variants with pvalues < 1e-4
+#	create a manhattan plot of the data
+#	create a qq plot of the data
+
+# Inputs: 
+#	Output directory
+#	Project names for each project
+#	The merged set of plink files from Step 1
+#	A phenotype file with FID, IID, STATUS, SEX, and PC1-10
+#		The STATUS in the phenotype file should be 1 for one set of data and 2 for the other set, as all are controls.
+# Outputs:
+#	Summary statistics from the pseudoGWAS
+#	A list of variants the are statistically significantly different between the datasets
+#	A manhattan plot .tiff
+#	A QQ plot .jpeg
+
+bash pseudoGWAS_array_P2.bash $OUTDIR $DataFromMergedProjects $ProjectName1 $ProjectName2 $PhenotypeFile
+
+# The outcome is a list of variants to exclude
+
+##############################################################
+##### Step 1c: Preparation for PseudoGWAS Between Arrays #####
+##############################################################
+
+# Prepare the data for performing a pseudoGWAS.
+# The example is a pseudoGWAS between 2 datasets that have been merged to the array level (eg. all batches from OmniEx chips merged).
+
+# These bash scripts:
+#	subset data to European controls
+#	merge the 2 datasets
+#	generate first 10 PCs for merged data
+
+# Inputs: 2 QCed sets of plink files from 2 separate batches that were genotyped with the same chip
+#	Output directory
+#	Project names for each array dataset
+#	A file for each dataset with lists of European controls in each project
+# Outputs: A merged set of data from each dataset
+#	calculated PCs for use in a phenotype file
+
+bash pseudoGWAS_between_array_P1.bash $OUTDIR $DataFromProject1 $ProjectName1 $EuropeanControls1 $DataFromProject2 $ProjectName2 $EuropeanControls2
+
+# The outcome is a merged set of plink files and PCs
+
+##############################################
+##### Step 2c: PseudoGWAS Between Arrays #####
+##############################################
+
+# Perform pseudoGWAS.
+
+# These bash scripts:
+#	perform a pseudoGWAS with data prepared in previous step
+#	create a list of variants with pvalues < 1e-4
+#	create a manhattan plot of the data
+#	create a qq plot of the data
+
+# Inputs: 
+#	Output directory
+#	Project names for each array dataset
+#	The merged set of plink files from Step 1
+#	A phenotype file with FID, IID, STATUS, SEX, and PC1-10
+# Outputs:
+#	Summary statistics from the pseudoGWAS
+#	A list of variants the are statistically significantly different between the datasets
+#	A manhattan plot .tiff
+#	A QQ plot .jpeg
+
+bash pseudoGWAS_between_array_P2.bash $OUTDIR $DataFromMergedProjects $ProjectName1 $ProjectName2 $PhenotypeFile
+
+# The outcome is a list of variants to exclude

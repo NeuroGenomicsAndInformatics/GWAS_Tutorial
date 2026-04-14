@@ -59,7 +59,7 @@ plink2 --bfile ${TEMP2}.geno02.mind05 \
 	--out ${TEMP2}.geno02.mind02
 
 # check and remove palindromic SNPs
-awk '($5=="A" && $6=="T") || ($5=="T" && $6=="A") || ($5=="G" && $6=="C") || ($5=="C" && $6=="G") {print $2}' ${TEMP}.geno02.mind02.bim > ${OUTDIR}/palindromic_SNPs.txt
+awk '($5=="A" && $6=="T") || ($5=="T" && $6=="A") || ($5=="G" && $6=="C") || ($5=="C" && $6=="G") {print $2}' ${TEMP2}.geno02.mind02.bim > ${OUTDIR}/palindromic_SNPs.txt
 
 plink2 --bfile ${TEMP2}.geno02.mind02 \
 	--exclude ${OUTDIR}/palindromic_SNPs.txt \

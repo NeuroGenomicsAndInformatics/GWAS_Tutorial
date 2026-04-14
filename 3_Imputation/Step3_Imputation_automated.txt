@@ -1,9 +1,15 @@
 ##### GWAS Array QC #####
 # This tutorial is designed to demonstrate how to perform imputation on QCed SNP array data.
+# This tutorial utilizes several bash scripts to perform multiple tasks at once.
 
-# In order to use this tutorial, you will need to determine a name for your project (ProjectName).
+# In order to use this tutorial, you will need to determine an output directory (OUTDIR) and name for your project (ProjectName).
 
 # The inputs and outputs for each step are listed.
+
+##########################
+##### Start Analysis #####
+##########################
+
 
 #################################
 ##### Step 1: Prepare Data ######
@@ -22,39 +28,15 @@
 
 # Inputs:
 # 	The output plink files from the previous QC step.
+#	Output directory
 #	Project Name
 #	A combined SNP exclusion list - collect all SNPs from exclude lists into a single file. This file is one column with variant IDs.
 # Outputs:
 #	vcf files for each chromosome
 
-export NAMEBASE="YourProjectName"
+bash Pre-imputation.bash $PreviousData $OUTDIR $ProjectName $ExclusionList
 
-# Remove variants from pseudoGWAS blacklist. Note the /path/to/previousdata is the path to the output of the previous tutorial without a file extension
-plink2 --bfile /path/to/previousdata --exclude /path/to/blacklist.txt --make-bed --out ${NAMEBASE}_excluded
-
-# Perform for all chromosomes individually
-for CHR in {1..22} X; do
-
-# Exclude variants from ranges defined by gnomAD
-plink2 --bfile ${NAMEBASE}_excluded \
-	--chr $CHR \
-	--exclude range \
-	gnomAD_QC/LCR_filter_gnomAD_v3/filtered_position_hg38/${CHR}_hg38_LCR_gnomAD_v3.txt \
-	gnomAD_QC/MultiAllelic_and_InsDel_filter_gnomAD_v3/filtered_position_hg38/${CHR}_hg38_MultiAllelic_and_InsDel_gnomAD_v3.txt \
-	gnomAD_QC/PrimerPoly_5perc_filter_gnomAD_v3/filtered_position_hg38/${CHR}_hg38_PrimerPoly_5perc_gnomAD_v3.txt \
-	gnomAD_QC/SV_filter_gnomAD_v2/filtered_position_hg38/hg38_SV_gnomAD_v2.txt \
-	--output-chr chrM \
-	--set-hh-missing \
-	--recode vcf bgz id-paste=iid \
-	--out ${NAMEBASE}_excluded.chr${CHR}
-	
-bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%ALT' -Oz -o ${NAMEBASE}_excluded.chr${CHR}.SNPID.vcf.gz ${NAMEBASE}_excluded.chr${CHR}.vcf.gz
-
-rm ${OUTDIR}/${NAMEBASE}_excluded.chr${CHR}.vcf.gz
-
-done	
-
-# The outcome is a set of imputation server-ready vcf files.
+# The outcome is a set of inputation server-ready vcf files.
 
 
 ##############################
@@ -97,37 +79,12 @@ done
 #	convert to plink files
 
 # Inputs:
+#	Output directory
 #	Project Name
 #	Password provided in email. This should be in single quotes and any special characters need to be escaped with a \
 # Outputs:
 #	A set of imputed plink files
 
-# Download the data using either the curl code or wget code provided by the imputation server.
-
-# Decompress imputation output
-parallel -j 23 "unzip -P 'yourpassword' chr_{1}.zip" ::: {1..22} X
-
-# Filter for Rsq > 0.7
-parallel -j 23 "bcftools view -i 'INFO/R2 > 0.7' -Oz -o chr{1}_r20.7.dose.vcf.gz chr{1}.dose.vcf.gz" ::: {1..22} X
-
-# Add chr:pos:ref:alt SNPIDs
-parallel -j 23 "bcftools annotate --set-id '%CHROM:%POS:%REF:%ALT' -Oz -o chr{1}_r20.7_annSNPID.vcf.gz chr{1}_r20.7.dose.vcf.gz" ::: {1..22} X
-
-parallel -j 23 "bcftools head chr{1}_r20.7_annSNPID.vcf.gz | grep -v contig > chr{1}_r20.7_annSNPID.hdr" ::: {1..22} X
-	
-parallel -j 23 "bcftools reheader --header chr{1}_r20.7_annSNPID.hdr -o chr{1}_r20.7_annSNPID.nocontig.vcf.gz chr{1}_r20.7_annSNPID.vcf.gz" ::: {1..22} X
-
-# Add contigs to make headers compatible
-parallel -j 23 "bcftools reheader --fai GRCh38.fasta.fai -o chr{1}_r20.7_annSNPID.hdr.vcf.gz chr{1}_r20.7_annSNPID.nocontig.vcf.gz" ::: {1..22} X
-
-# Gather vcfs
-INPUTS=()
-for CHR in {1..22} X; do INPUTS+=" -I chr${CHR}_r20.7_annSNPID.hdr.vcf.gz"; done
-
-gatk GatherVcfs ${INPUTS[@]} -O ${NAMEBASE}_gathered.vcf.gz
-
-# Turn into plink files
-plink2 --vcf ${NAMEBASE}_gathered.vcf.gz --double-id --make-bed --out 00-${NAMEBASE}_annSNPID_r20.7 
-
+bash Post-imputation.bash $OUTDIR $ProjectName '\$Password'
 
 # The outcome is a set of imputed plink files.

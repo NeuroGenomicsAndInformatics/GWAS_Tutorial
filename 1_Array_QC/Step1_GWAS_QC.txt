@@ -3,10 +3,9 @@
 # The following tutorials represent an update on that set of tutorials.
 # The HapMap data originated from hapmap3_r3_b36_fwd.consensus.qc and had a simulated outcome added, as well as subsetting to only European individuals.
 # In order to follow the tutorial, the HapMap data must be in the working directory.
-# Each step includes a generalized command and the specific commands for the HapMap example.
+# Each step uses the HapMap example data. To perform these steps with your data, replace the filenames with your data.
 
 # This tutorial is designed to demonstrate how to perform QC on SNP array data.
-# This tutorial utilizes several bash scripts to perform multiple tasks at once.
 
 # In order to use this tutorial, you will need to determine an output directory (OUTDIR) and name for your project (ProjectName).
 
@@ -18,23 +17,37 @@
 
 # Before starting the QC in earnest, obtain your data and correct missing data.
 
-# The preQC_MJ.bash script will:
-#	remove variants with missing ref and alt alleles
-#	update alleles in the case of missing one allele
-#	remove variants with missing alleles after the update
+# The these steps will:
+#	remove variants with missing alleles
 #	remove variants with no chromosome information
 #	remove variants with D or I as an allele
 #	remove duplicate variants
-#	remove variants with less than 90% individual missingness
+#	remove samples with less than 90% individual missingness
 
 # Inputs: A raw set of plink files (bed,bim,fam)
-# 	A text file with SNPname, REF, and ALT columns made with an array-specific allele mapping file (https://www.chg.ox.ac.uk/~wrayner/strand/ABtoTOPstrand.html) 
-#	Output directory
-#	Project Name
+#	Project Name (set as NAMEBASE variable in first step
 # Outputs: An initial QCed set of plink files
 
-bash preQC.bash /path/to/input_data $OUTDIR $ProjectName missing_alleles.txt
-bash preQC.bash HapMap_3_r3_1 . HapMap_3_r3_1 missing_alleles.txt
+export NAMEBASE="YourProjectName"
+
+# Find variants with at least one zero allele missing or . missing allele
+awk '{if($5 == "0" || $6 == "0" || $5 == "." || $6 == "." || $5 == "-" || $6 == "-") print $0}' HapMap_3_r3_1.bim > vars_allele_missing.txt
+
+# Find variants with no chr info (chr0)
+awk '{if($1 == "0" ) print $2}' HapMap_3_r3_1.bim > vars_chr_missing.txt
+
+# Check for Indels coded as D/I
+awk '{if($5 =="I" || $5 == "D" || $6 == "I" || $6 == "D") print $2}' HapMap_3_r3_1.bim > vars_indels.txt
+
+plink2 --bfile HapMap_3_r3_1 --rm-dup list --make-bed --out 00-${NAMEBASE}
+
+# remove variants from above steps
+cat ${OUTDIR}/vars_allele_missing.txt ${OUTDIR}/vars_chr_missing.txt ${OUTDIR}/vars_indels.txt > ${OUTDIR}/vars_toremove.txt
+
+plink2 --bfile 00-${NAMEBASE} --exclude vars_toremove.txt --make-bed --out 00-${NAMEBASE}.preQC
+
+# Remove zeroed individuals from input plink files if present
+plink2 --bfile 00-${NAMEBASE}.preQC --mind 0.1 --make-bed --out 01-${NAMEBASE}
 
 # The outcome is a set of plink files with corrected alleles and removed unusable variants
 
@@ -42,20 +55,42 @@ bash preQC.bash HapMap_3_r3_1 . HapMap_3_r3_1 missing_alleles.txt
 ##### Step 2: Liftover #####
 ############################
 
-# This bash script will liftover data from GRCh37/hg19 to GRCh38.
-# There is also a Liftover_hg18_GRCh38_MJ.bash that will lift from hg18 to GRCh38
+# This step will liftover data from GRCh37/hg19 to GRCh38.
 # It is important to verify that your data is in GRCh37/hg19 by checking a few variants to see if they match the positions in the data
 # You can check what build your data is here: https://www.ncbi.nlm.nih.gov/snp/
 
 # Liftover data to GRCh38 data. This step may be unnecessary.
 
 # Inputs: The plink files from the previous step
-#	Output directory
 #	Project Name
 # Outputs: A set of plink files in GRCh38 format
 
-bash Liftover_hg19_GRCh38.bash $PreviousData $OUTDIR $ProjectName
-bash Liftover_hg19_GRCh38.bash 01-HapMap_3_r3_1 . HapMap_3_r3_1
+# Update chromosome codes
+plink1.9 --bfile 01-${NAMEBASE} --output-chr chrM --keep-allele-order --allow-no-sex --make-bed --out 01-${NAMEBASE}.chrs
+
+# Turn bim into bed file
+awk '{OFS="\t"}; {print $1,$4-1,$4,$2}' 01-${NAMEBASE}.chrs.bim > 01-${NAMEBASE}.chrs.tolift.bed
+
+# Create lifted files
+liftOver 01-${NAMEBASE}.chrs.tolift.bed hg19ToHg38.over.chain.gz 01-${NAMEBASE}.chrs.tolift.bed-hg38 01-${NAMEBASE}.chrs.tolift.bed-unmapped
+
+# Remove variants on weird chromosomes
+grep -v  '#Deleted' 01-${NAMEBASE}.chrs.tolift.bed-unmapped | awk '{print $4}' > to_remove.txt
+
+grep '_alt' 01-${NAMEBASE}.chrs.tolift.bed-hg38 | awk '{print $2}'  >> to_remove.txt
+
+grep '_random' 01-${NAMEBASE}.chrs.tolift.bed-hg38 | awk '{print $2}' >> to_remove.txt
+
+grep 'chrUn_' 01-${NAMEBASE}.chrs.tolift.bed-hg38 | awk '{print $2}' >> to_remove.txt
+
+#Creating files to update plink file to hg38
+grep -Ev '_alt|_random|chrUn_' 01-${NAMEBASE}.chrs.tolift.bed-hg38 > 01-${NAMEBASE}.chrs.tolift.bed-hg38-clean
+
+awk '{print $4, $3}' 01-${NAMEBASE}.chrs.tolift.bed-hg38-clean > update_pos.txt
+
+awk '{print $4, $1}' 01-${NAMEBASE}.chrs.tolift.bed-hg38-clean > update_chr.txt
+
+plink1.9 --bfile 01-${NAMEBASE}.chrs --exclude to_remove.txt --keep-allele-order --allow-no-sex --update-chr update_chr.txt --update-map update_pos.txt --make-bed --out 02-${NAMEBASE}
 
 # The outcome is a set of plink files in GRCh38 build.
 
@@ -65,7 +100,7 @@ bash Liftover_hg19_GRCh38.bash 01-HapMap_3_r3_1 . HapMap_3_r3_1
 
 # Perform variant and individual level QC.
 
-# The QC_P1_MJ.bash script does several QC steps:
+# These steps will:
 #	fix flips and swaps when compared to the reference genome
 #	perform variant and sample missingness filters of 95% and 98%
 #	remove palindromic SNPs
@@ -73,13 +108,39 @@ bash Liftover_hg19_GRCh38.bash 01-HapMap_3_r3_1 . HapMap_3_r3_1
 #	set variant ID format to chr:pos:ref:alt
 
 # Inputs: The plink files from the previous step
-#	Output directory
 #	Project Name
 #	A reference fasta file in build hg38. This can be obtained with guidance from here: https://gatk.broadinstitute.org/hc/en-us/articles/360035890811-Resource-bundle
 # Outputs: A set of plink files with the above QC completed
 
-bash QC_P1.bash $PreviousData $OUTDIR $ProjectName /path/to/reference.fasta
-bash QC_P1.bash 03-HapMap_3_r3_1 . HapMap_3_r3_1 /path/to/reference.fasta
+# fix flips and swaps
+plink2 --bfile 02-${NAMEBASE} --recode vcf id-paste=iid bgz --out 03-${NAMEBASE}
+
+bcftools annotate --rename-chrs chr_change.txt -Oz -o 03-${NAMEBASE}.chrs.vcf.gz 03-${NAMEBASE}.vcf.gz
+
+bcftools +fixref 03-${NAMEBASE}.chrs.vcf.gz -Oz -o 03-${NAMEBASE}.chrs.fixref.vcf.gz -- -f /path/to/reference.fasta -m flip
+
+plink2 --vcf 03-${NAMEBASE}.chrs.fixref.vcf.gz --double-id --snps-only just-acgt --vcf-half-call missing --output-chr chrM --make-bed --out 03-${NAMEBASE}.fixref
+
+# Missingness filters
+# SNPs genotyped in 95% of samples
+plink2 --bfile 03-${NAMEBASE}.fixref --geno 0.05 --make-bed --out 03-${NAMEBASE}.geno05
+
+# Individuals that don't have 95% of SNPs
+plink2 --bfile 03-${NAMEBASE}.geno05 --mind 0.05 --make-bed --out 03-${NAMEBASE}.geno05.mind05
+
+# SNPs genotyped in 98% of samples
+plink2 --bfile 03-${NAMEBASE}.geno05.mind05 --geno 0.02 --make-bed --out 03-${NAMEBASE}.geno02.mind05
+
+# Individuals that don't have 98% of SNPs
+plink2 --bfile 03-${NAMEBASE}.geno02.mind05 --mind 0.02 --make-bed --out 03-${NAMEBASE}.geno02.mind02
+
+# check and remove palindromic SNPs
+awk '($5=="A" && $6=="T") || ($5=="T" && $6=="A") || ($5=="G" && $6=="C") || ($5=="C" && $6=="G") {print $2}' 03-${NAMEBASE}.geno02.mind02.bim > palindromic_SNPs.txt
+
+plink2 --bfile 03-${NAMEBASE}.geno02.mind02 --exclude palindromic_SNPs.txt --make-bed --out 03-${NAMEBASE}.geno02.mind02.nopal
+
+# Update IDs to CHR:POS:REF:ALT to match with GWAS master file and maf filter
+plink2 --bfile 03-${NAMEBASE}.geno02.mind02.nopal --set-all-var-ids @:#:\$r:\$a --maf 0.01 --output-chr chrM --make-bed --out 04-${NAMEBASE}
 
 # The outcome is a set of plink files that have been filtered for missingness and maf and have flips and swaps corrected
 
@@ -89,14 +150,13 @@ bash QC_P1.bash 03-HapMap_3_r3_1 . HapMap_3_r3_1 /path/to/reference.fasta
 
 # Perform further QC.
 
-# The QC_P2_MJ.bash script carries out several QC steps:
-#	Updates sex
-#	Performs a sex check
-#	Finds heterozygosity outliers
-#	Filters variants by differential missingness from diagnosis and ancestry and filters based on hardy weinberg equilibrium
+# These steps will:
+#	Update sex
+#	Perform a sex check
+#	Find heterozygosity outliers
+#	Filter variants by differential missingness from diagnosis and ancestry and filters based on hardy weinberg equilibrium
 
 # Inputs: The plink files from the previous step
-#	Output directory
 #	Project Name
 #	A sex update file. This file contains columns 1) FID and 2) IID for your samples and 3) 1/2 for sex (Females are 2)
 #	A European ancestry file. This file contains columns for FID and IID with no header for samples that are European.
@@ -106,7 +166,27 @@ bash QC_P1.bash 03-HapMap_3_r3_1 . HapMap_3_r3_1 /path/to/reference.fasta
 #	A list of samples that fall outside 3SD of the mean for heterozygosity
 #	A histogram of the distribution of heterozygosity rates
 
-bash QC_P2.bash $PreviousData $OUTDIR $ProjectName $SEX_UPDATE_FILE $EUROPEAN_FILE $PHENOTYPE_FILE
-bash QC_P2.bash 06-HapMap_3_r3_1 . HapMap_3_r3_1 HapMap_sex.txt $EUROPEAN_FILE $PHENOTYPE_FILE
+# Update sex and perform a sex check
+plink2 --bfile 04-${NAMEBASE} --update-sex HapMap_sex.txt --output-chr chrM --make-bed --out 04-${NAMEBASE}.wsex
+
+plink1.9 --bfile 04-${NAMEBASE}.wsex --split-x b38 no-fail --keep-allele-order --allow-no-sex --make-bed --out 04-${NAMEBASE}.wsex.split-x
+
+plink1.9 --bfile 04-${NAMEBASE}.wsex.split-x --check-sex --keep-allele-order --allow-no-sex --make-bed --out 04-${NAMEBASE}.wsex.split-x.check
+
+# Heterozygosity
+plink2 --bfile 04-${NAMEBASE}.wsex --chr 1-22 --make-bed --out 04-${NAMEBASE}_auto
+
+plink2 --bfile 04-${NAMEBASE}_auto --set-all-var-ids @:#:\$r:\$a --output-chr chrM --rm-dup force-first --make-bed --out 04-${NAMEBASE}.ids
+
+plink2 --bfile 04-${NAMEBASE}.ids --indep-pairwise 50 5 0.2 --out indepSNP
+
+plink1.9 --bfile 04-${NAMEBASE}.ids --extract indepSNP.prune.in --het --keep-allele-order --allow-no-sex --make-bed --out 04-${NAMEBASE}.ids_pruned
+
+Rscript heterozygosity.r . 04-${NAMEBASE}.ids_pruned.het
+
+# Differential missingness, HWE, and setting male het calls to missing
+Rscript new_basic_QC.R 04-${NAMEBASE}.wsex . $NAMEBASE HapHap_EUR.txt HapMap_pheno.txt
+	
+plink2 --bfile ${NAMEBASE}.filts.hwe.hh --update-sex HapMap_sex.txt --set-all-var-ids @:#:\$r:\$a --output-chr chrM --make-bed --out 05-${NAMEBASE}
 
 # The outcome is a set of QCed plink files.
