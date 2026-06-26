@@ -25,6 +25,7 @@ bash MAcheck.bash merged_data.log
 # Principle Components are used to understand underlying relationships between data.
 # This step demonstrates filtering for high quality variants to use while generating PCs.
 # You are looking for around 50,000-100,000 variants. Adjust the --geno and --maf filters to get that number.
+# This strict filtering for a lower number of variants only applies to to the creation of PCAs, don't use this small number of variants when creating the GLM!
 plink1.9 --allow-no-sex --bfile merge_data --geno 0.0001 --hwe 0.05 --keep-allele-order --ld-window-r2 0.2 --maf 0.01 --out merge_data_pc --pca 10
 
 # The outcome is an .eigenvec file that contains the sample names and first 10 PCs for the data.

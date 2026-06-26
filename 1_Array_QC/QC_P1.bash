@@ -31,6 +31,7 @@ plink2 --vcf ${TEMP}.chrs.fixref.vcf.gz \
 	--vcf-half-call missing \
 	--output-chr chrM \
 	--make-bed \
+	--fam  ${IN_BFILE}.fam \
 	--out ${TEMP}.fixref
 
 # Missingness filters

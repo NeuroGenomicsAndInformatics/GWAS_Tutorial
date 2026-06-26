@@ -28,7 +28,7 @@
 #	remove variants with less than 90% individual missingness
 
 # Inputs: A raw set of plink files (bed,bim,fam)
-# 	A text file with SNPname, REF, and ALT columns made with an array-specific allele mapping file (https://www.chg.ox.ac.uk/~wrayner/strand/ABtoTOPstrand.html) 
+# 	A text file with SNPname, REF, and ALT columns made with an array-specific allele mapping file (https://www.chg.ox.ac.uk/~wrayner/strand/ABtoTOPstrand.html)
 #	Output directory
 #	Project Name
 # Outputs: An initial QCed set of plink files
@@ -107,6 +107,6 @@ bash QC_P1.bash 03-HapMap_3_r3_1 . HapMap_3_r3_1 /path/to/reference.fasta
 #	A histogram of the distribution of heterozygosity rates
 
 bash QC_P2.bash $PreviousData $OUTDIR $ProjectName $SEX_UPDATE_FILE $EUROPEAN_FILE $PHENOTYPE_FILE
-bash QC_P2.bash 06-HapMap_3_r3_1 . HapMap_3_r3_1 HapMap_sex.txt $EUROPEAN_FILE $PHENOTYPE_FILE
+bash QC_P2.bash 06-HapMap_3_r3_1 . HapMap_3_r3_1 HapMap_sex.txt HapMap_EUR.txt HapMap_pheno.txt
 
 # The outcome is a set of QCed plink files.

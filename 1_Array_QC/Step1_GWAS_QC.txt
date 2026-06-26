@@ -119,7 +119,7 @@ bcftools annotate --rename-chrs chr_change.txt -Oz -o 03-${NAMEBASE}.chrs.vcf.gz
 
 bcftools +fixref 03-${NAMEBASE}.chrs.vcf.gz -Oz -o 03-${NAMEBASE}.chrs.fixref.vcf.gz -- -f /path/to/reference.fasta -m flip
 
-plink2 --vcf 03-${NAMEBASE}.chrs.fixref.vcf.gz --double-id --snps-only just-acgt --vcf-half-call missing --output-chr chrM --make-bed --out 03-${NAMEBASE}.fixref
+plink2 --vcf 03-${NAMEBASE}.chrs.fixref.vcf.gz --double-id --snps-only just-acgt --vcf-half-call missing --output-chr chrM --make-bed --fam  ${IN_BFILE}.fam --out 03-${NAMEBASE}.fixref
 
 # Missingness filters
 # SNPs genotyped in 95% of samples
@@ -158,7 +158,7 @@ plink2 --bfile 03-${NAMEBASE}.geno02.mind02.nopal --set-all-var-ids @:#:\$r:\$a 
 
 # Inputs: The plink files from the previous step
 #	Project Name
-#	A sex update file. This file contains columns 1) FID and 2) IID for your samples and 3) 1/2 for sex (Females are 2)
+#	A sex update file. This file contains columns 1) FID and 2) IID for your samples and 3) 1/2 for sex, corresponding to the number of X chromosomes (Females are 2)
 #	A European ancestry file. This file contains columns for FID and IID with no header for samples that are European.
 #	An optional phenotype file. This file contains columns for 1) FID and 2) IID for your samples and 3) STATUS (name is important and data should be binary)
 # Outputs: A QCed set of plink files
@@ -186,7 +186,7 @@ Rscript heterozygosity.r . 04-${NAMEBASE}.ids_pruned.het
 
 # Differential missingness, HWE, and setting male het calls to missing
 Rscript new_basic_QC.R 04-${NAMEBASE}.wsex . $NAMEBASE HapHap_EUR.txt HapMap_pheno.txt
-	
+
 plink2 --bfile ${NAMEBASE}.filts.hwe.hh --update-sex HapMap_sex.txt --set-all-var-ids @:#:\$r:\$a --output-chr chrM --make-bed --out 05-${NAMEBASE}
 
 # The outcome is a set of QCed plink files.
