@@ -119,7 +119,7 @@ bcftools annotate --rename-chrs chr_change.txt -Oz -o 03-${NAMEBASE}.chrs.vcf.gz
 
 bcftools +fixref 03-${NAMEBASE}.chrs.vcf.gz -Oz -o 03-${NAMEBASE}.chrs.fixref.vcf.gz -- -f /path/to/reference.fasta -m flip
 
-plink2 --vcf 03-${NAMEBASE}.chrs.fixref.vcf.gz --double-id --snps-only just-acgt --vcf-half-call missing --output-chr chrM --make-bed --fam  ${IN_BFILE}.fam --out 03-${NAMEBASE}.fixref
+plink2 --vcf 03-${NAMEBASE}.chrs.fixref.vcf.gz --double-id --snps-only just-acgt --vcf-half-call missing --output-chr chrM --make-bed --out 03-${NAMEBASE}.fixref
 
 # Missingness filters
 # SNPs genotyped in 95% of samples
