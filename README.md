@@ -7,6 +7,7 @@ This repository provides an overview and tutorials for analyzing genetic data. T
 *	Merging batches of data
 *	Calculating Principle Components (PCs) for the data
 *	Performing association studies
+
 While example data is included for practice/testing purposes, these tutorials can also be used as a template for processing real data. Familiarity with a Unix/Linux environment is assumed and the tutorials rely on running in that environment.
 ## Setup
 Setting up requires cloning this GitHub repository, which will download all scripts and data and keep them organized. This can be done by opening a shell on your computer or server, navigating to the location you want to keep the data, and entering “git clone https://github.com/NeuroGenomicsAndInformatics/GWAS_Tutorial.git” and hitting enter.
