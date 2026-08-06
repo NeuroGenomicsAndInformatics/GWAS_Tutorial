@@ -1,8 +1,8 @@
 #!/bin/bash
 # This script is for performing a pseudoGWAS with a batch of our data with 1000 Genomes. This script prepares the data.
 
-IN_BFILE=$1
-OUTDIR=$2
+OUTDIR=$1
+IN_BFILE=$2
 NAMEBASE=$3
 EURCO_FILE=$4
 KG_EUR=$5
@@ -78,7 +78,7 @@ plink1.9 --bfile ${TEMP}_1KG_merged \
 	--make-bed \
 	--out ${TEMP}_1KG_merged_clean
 
-else 
+else
 	cp ${TEMP}_1KG_merged.bed ${TEMP}_1KG_merged_clean.bed
 	cp ${TEMP}_1KG_merged.bim ${TEMP}_1KG_merged_clean.bim
 	cp ${TEMP}_1KG_merged.fam ${TEMP}_1KG_merged_clean.fam

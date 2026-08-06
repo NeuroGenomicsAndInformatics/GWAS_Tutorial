@@ -19,7 +19,7 @@
 # Download all of the chromosome vcfs and their accompanying .tbi index.
 
 # Concat vcf files of all the chr's
-#	Prepare a list of all the vcf file names to combine and put it in file_list.txt 
+#	Prepare a list of all the vcf file names to combine and put it in file_list.txt
 bcftools concat -f file_list.txt -Oz > 1KG_GRCh38.20190312_all_chr_merged.vcf.gz
 
 #Convert vcf to Plink format.
@@ -59,7 +59,7 @@ export NAMEBASE="YourProjectName"
 plink2 --bfile /path/to/previousdata --keep HapHap_EURCO.txt --make-bed --out ${NAMEBASE}_EURCO
 
 # Get common SNPs and flips
-Rscript allele_qc.R 1KG_GRCh38.20190312_all_chr_merged_updated_IDs_qc_EUR.bim ${NAMEBASE}_EURCO.bim . allele_qc_report.txt
+Rscript allele_qc.R 1KG_GRCh38.20190312_all_chr_merged_updated_IDs_qc_EUR.bim ${NAMEBASE}_EURCO.bim ./ allele_qc_report.txt
 
 plink2 --bfile 1KG_GRCh38.20190312_all_chr_merged_updated_IDs_qc_EUR --extract extractrefSnps.txt --make-bed --out 1KG_with_${NAMEBASE}_snps
 
@@ -96,8 +96,8 @@ plink1.9 --bfile ${NAMEBASE}_1KG_merged  --geno 0.001 --hwe 0.005 --maf 0.1 --pc
 
 # Open ${NAMEBASE}_1KG_merged.fam in Excel.
 # Remove the last 4 numerical columns.
-# Insert a row at the top and name the columns "FID,IID,Status,Sex,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10"
-# Set the Status column to 1 for all of your samples and 0 for all of the 1KG samples.
+# Insert a row at the top and name the columns "FID,IID,STATUS,SEX,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10"
+# Set the STATUS column to 1 for all of your samples and 2 for all of the 1KG samples.
 # Use the 1KG_sex.txt and HapMap_sex.txt files to fill in the Sex column.
 # Use the ${NAMEBASE}_1KG_merged_pca.eigenvec file to add the PC data.
 # Save the file as a .txt file named "${NAMEBASE}_1KG_merged_pheno.txt".
@@ -117,7 +117,7 @@ dos2unix ${NAMEBASE}_1KG_merged_pheno.txt
 #	create a manhattan plot of the data
 #	create a qq plot of the data
 
-# Inputs: 
+# Inputs:
 #	Project name for each project
 #	The merged set of plink files from Step 1
 #	A phenotype file with FID, IID, STATUS, SEX, and PC1-10
@@ -137,4 +137,3 @@ awk '{if ($3 < 1e-4) print $2}' ${NAMEBASE}_1KG_merged_gwas.assoc.logistic.adjus
 Rscript make_manhattan_update.R ${NAMEBASE}_1KG_merged_gwas.assoc.logistic.adjusted
 
 # The outcome is a list of variants to exclude
-

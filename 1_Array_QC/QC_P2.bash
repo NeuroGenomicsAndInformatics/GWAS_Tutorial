@@ -71,7 +71,7 @@ Rscript ${SCRIPT_DIR}/new_basic_QC.R \
 	$NAMEBASE \
 	$EUR_LIST \
 	$PHENO_FILE
-	
+
 plink2 --bfile ${OUTDIR}/${NAMEBASE}.filts.hwe.hh \
 	--update-sex ${SEX_FILE} \
 	--set-all-var-ids @:#:\$r:\$a \
@@ -100,11 +100,9 @@ if [[ -f ${OUTDIR}/${NAMEBASE}.dx_filt.bed ]]; then
 	rm ${OUTDIR}/${NAMEBASE}.dx_filt.sex_filt.{bed,bim,fam}
 	rm ${OUTDIR}/${NAMEBASE}.dx_filt.sex_filt.hwe.{bed,bim,fam}
 	rm ${OUTDIR}/${NAMEBASE}.dx_filt.sex_filt.hwe.hwex.{bed,bim,fam}
-	rm ${OUTDIR}/${NAMEBASE}.dx_filt.sex_filt.hwe.hwex.par.{bed,bim,fam}
 else
 	rm ${OUTDIR}/${NAMEBASE}.sex_filt.{bed,bim,fam}
 	rm ${OUTDIR}/${NAMEBASE}.sex_filt.hwe.{bed,bim,fam}
 	rm ${OUTDIR}/${NAMEBASE}.sex_filt.hwe.hwex.{bed,bim,fam}
-	rm ${OUTDIR}/${NAMEBASE}.sex_filt.hwe.hwex.par.{bed,bim,fam}
 fi
 rm ${OUTDIR}/${NAMEBASE}.filts.hwe.hh.{bed,bim,fam}
