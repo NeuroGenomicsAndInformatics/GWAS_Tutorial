@@ -20,8 +20,11 @@
 # The data is in VCF format and split by chromosomes.
 # Download all of the chromosome vcfs and their accompanying .tbi index.
 
+#Currently, there may be issues with 2 of the files in the 1000 genomes FTP
+#If this occurs, the Cruchaga lab has a file bundle at hydra.psych.wucon.wustl.edu\03-DryLab\01-References_Software\01-References\GRCh38\annotation\1000genomes
+
 # Concat vcf files of all the chr's
-#	Prepare a list of all the vcf file names to combine and put it in file_list.txt 
+#	Prepare a list of all the vcf file names to combine and put it in file_list.txt
 bcftools concat -f file_list.txt -Oz > 1KG_GRCh38.20190312_all_chr_merged.vcf.gz
 
 #Convert vcf to Plink format.
@@ -73,7 +76,7 @@ bash pseudoGWAS_1KG_P1.bash $OUTDIR $DataFromProject1 $ProjectName1 $EuropeanCon
 #	create a manhattan plot of the data
 #	create a qq plot of the data
 
-# Inputs: 
+# Inputs:
 #	Output directory
 #	Project name for each project
 #	The merged set of plink files from Step 1a
@@ -124,7 +127,7 @@ bash pseudoGWAS_array_P1.bash $OUTDIR $DataFromProject1 $ProjectName1 $EuropeanC
 #	create a manhattan plot of the data
 #	create a qq plot of the data
 
-# Inputs: 
+# Inputs:
 #	Output directory
 #	Project names for each project
 #	The merged set of plink files from Step 1
@@ -175,7 +178,7 @@ bash pseudoGWAS_between_array_P1.bash $OUTDIR $DataFromProject1 $ProjectName1 $E
 #	create a manhattan plot of the data
 #	create a qq plot of the data
 
-# Inputs: 
+# Inputs:
 #	Output directory
 #	Project names for each array dataset
 #	The merged set of plink files from Step 1

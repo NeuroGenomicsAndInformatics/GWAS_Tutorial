@@ -1,8 +1,8 @@
 #!/bin/bash
 # This script is for performing a pseudoGWAS with a batch of our data with 1000 Genomes. This script runs the GWAS.
 
-IN_BFILE=$1
-OUTDIR=$2
+OUTDIR=$1
+IN_BFILE=$2
 NAMEBASE=$3
 PHENO_FILE=$4
 INDEX_NUM=$(echo ${IN_BFILE##*/} | cut -d- -f1)

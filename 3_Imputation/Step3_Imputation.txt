@@ -47,12 +47,12 @@ plink2 --bfile ${NAMEBASE}_excluded \
 	--set-hh-missing \
 	--recode vcf bgz id-paste=iid \
 	--out ${NAMEBASE}_excluded.chr${CHR}
-	
+
 bcftools annotate --set-id '%CHROM\:%POS\:%REF\:%ALT' -Oz -o ${NAMEBASE}_excluded.chr${CHR}.SNPID.vcf.gz ${NAMEBASE}_excluded.chr${CHR}.vcf.gz
 
 rm ${OUTDIR}/${NAMEBASE}_excluded.chr${CHR}.vcf.gz
 
-done	
+done
 
 # The outcome is a set of imputation server-ready vcf files.
 
@@ -72,8 +72,8 @@ done
 # Click select files and use CTRL to select all of the vcf files we created, including chrX
 # Select "GRCh38/hg38" for "Array Build"
 # Select "0.3" for "rsq Filter"
-# Select "Eagle v2.4 (phased output)" for "Phasing"
-# Select "vs. TOPMed Panel" for "Population"
+# Select "Eagle v2.4 (phased output)" for "Phasing Engine"
+# Select "vs. TOPMed Panel" for "Allele Frequency Check"
 # Select "Quality Control & Imputation" for "Mode"
 # Check the two boxes that start with "I will"
 # Click "Submit Job"
@@ -114,7 +114,7 @@ parallel -j 23 "bcftools view -i 'INFO/R2 > 0.7' -Oz -o chr{1}_r20.7.dose.vcf.gz
 parallel -j 23 "bcftools annotate --set-id '%CHROM:%POS:%REF:%ALT' -Oz -o chr{1}_r20.7_annSNPID.vcf.gz chr{1}_r20.7.dose.vcf.gz" ::: {1..22} X
 
 parallel -j 23 "bcftools head chr{1}_r20.7_annSNPID.vcf.gz | grep -v contig > chr{1}_r20.7_annSNPID.hdr" ::: {1..22} X
-	
+
 parallel -j 23 "bcftools reheader --header chr{1}_r20.7_annSNPID.hdr -o chr{1}_r20.7_annSNPID.nocontig.vcf.gz chr{1}_r20.7_annSNPID.vcf.gz" ::: {1..22} X
 
 # Add contigs to make headers compatible
@@ -127,7 +127,7 @@ for CHR in {1..22} X; do INPUTS+=" -I chr${CHR}_r20.7_annSNPID.hdr.vcf.gz"; done
 gatk GatherVcfs ${INPUTS[@]} -O ${NAMEBASE}_gathered.vcf.gz
 
 # Turn into plink files
-plink2 --vcf ${NAMEBASE}_gathered.vcf.gz --double-id --make-bed --out 00-${NAMEBASE}_annSNPID_r20.7 
+plink2 --vcf ${NAMEBASE}_gathered.vcf.gz --double-id --make-bed --out 00-${NAMEBASE}_annSNPID_r20.7
 
 
 # The outcome is a set of imputed plink files.
