@@ -12,5 +12,6 @@ While example data is included for practice/testing purposes, these tutorials ca
 
 ## Setup
 Setting up requires cloning this GitHub repository, which will download all scripts and data and keep them organized. This can be done by opening a shell on your computer or server, navigating to the location you want to keep the data, and entering “git clone https://github.com/NeuroGenomicsAndInformatics/GWAS_Tutorial.git” and hitting enter.
+
 ## Organization
-Each step of the tutorial builds on the previous steps, so they must be completed in order. Each step has a Step#_name.txt and a Step#_name_automated.txt file to lead you through the tutorial. The automated files utilize production scripts to process data efficiently, while the non-automated files provide step by step walkthroughs. The code in the files should be copied and pasted into your Unix environment to be run.
+Each step of the tutorial builds on the previous steps, so they must be completed in order; however, if your data is already prepared you can skip to 2_AssociationStudy. Each step has a Step#_name.txt and a Step#_name_automated.txt file to lead you through the tutorial. The automated files utilize production scripts to process data efficiently, while the non-automated files provide step by step walkthroughs. The code in the files should be copied and pasted into your Unix environment to be run.
